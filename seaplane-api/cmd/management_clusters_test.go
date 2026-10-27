@@ -13,17 +13,20 @@ import (
 )
 
 func TestManagementClustersParse(t *testing.T) {
-	clusters, err := managementClusters(" mc01:111111111111, mc02:222222222222 ,", "us-east-1")
+	// The Terraform account suffix is ignored; every cluster gets the placeholder account.
+	clusters, err := managementClusters(" mc01:111111111111, mc02 ,", "us-east-1")
 	if err != nil || len(clusters) != 2 {
 		t.Fatalf("clusters = %+v, err = %v", clusters, err)
 	}
-	if mc := clusters[1]; mc.Name != "mc02" || mc.Spec.AccountID != "222222222222" || mc.Spec.Region != "us-east-1" {
-		t.Fatalf("wrong cluster: %+v", mc)
+	for i, name := range []string{"mc01", "mc02"} {
+		if mc := clusters[i]; mc.Name != name || mc.Spec.AccountID != placeholderMCAccountID || mc.Spec.Region != "us-east-1" {
+			t.Fatalf("wrong cluster: %+v", mc)
+		}
 	}
 	if clusters, err := managementClusters("", "us-east-1"); err != nil || len(clusters) != 0 {
 		t.Fatalf("empty value: %+v %v", clusters, err)
 	}
-	for _, value := range []string{"mc01", ":111111111111", "mc01:12345"} {
+	for _, value := range []string{":111111111111", ":"} {
 		if _, err := managementClusters(value, "us-east-1"); err == nil {
 			t.Errorf("accepted %q", value)
 		}
@@ -50,7 +53,7 @@ func TestRegisterManagementClustersIdempotent(t *testing.T) {
 		}
 	}
 	var stored seaplanev1alpha1.ManagementCluster
-	if err := store.Get(t.Context(), client.ObjectKey{Name: "mc01"}, &stored); err != nil || stored.Spec.AccountID != "111111111111" || stored.Spec.Region != "us-east-1" {
+	if err := store.Get(t.Context(), client.ObjectKey{Name: "mc01"}, &stored); err != nil || stored.Spec.AccountID != placeholderMCAccountID || stored.Spec.Region != "us-east-1" {
 		t.Fatalf("stored = %+v, err = %v", stored, err)
 	}
 }

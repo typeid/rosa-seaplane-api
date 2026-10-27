@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"regexp"
 	"strings"
 
 	seaplanev1alpha1 "github.com/openshift-online/rosa-seaplane-api/api/v1alpha1"
@@ -12,10 +11,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var accountIDPattern = regexp.MustCompile(`^\d{12}$`)
+// placeholderMCAccountID is NOT a real AWS account. ManagementCluster.Spec.AccountID is
+// required by the CRD but nothing reads it: placement and the status stream key on the
+// name. Startup registration is temporary until the MC autoscaler registers clusters.
+const placeholderMCAccountID = "000000000000"
 
-// managementClusters parses MANAGEMENT_CLUSTERS, "name:account" entries separated
-// by commas (the regional Terraform format), into the clusters to register here.
+// managementClusters parses MANAGEMENT_CLUSTERS, comma-separated entries in the regional
+// Terraform format ("name:account"), into the clusters to register here. Only the name
+// is used; the account suffix is ignored.
 func managementClusters(value, region string) ([]*seaplanev1alpha1.ManagementCluster, error) {
 	var clusters []*seaplanev1alpha1.ManagementCluster
 	for entry := range strings.SplitSeq(value, ",") {
@@ -23,13 +26,13 @@ func managementClusters(value, region string) ([]*seaplanev1alpha1.ManagementClu
 		if entry == "" {
 			continue
 		}
-		name, account, ok := strings.Cut(entry, ":")
-		if !ok || name == "" || !accountIDPattern.MatchString(account) {
-			return nil, fmt.Errorf("invalid MANAGEMENT_CLUSTERS entry %q: want name:12-digit-account", entry)
+		name, _, _ := strings.Cut(entry, ":")
+		if name == "" {
+			return nil, fmt.Errorf("invalid MANAGEMENT_CLUSTERS entry %q: want name or name:account", entry)
 		}
 		clusters = append(clusters, &seaplanev1alpha1.ManagementCluster{
 			ObjectMeta: metav1.ObjectMeta{Name: name},
-			Spec:       seaplanev1alpha1.ManagementClusterSpec{Region: region, AccountID: account},
+			Spec:       seaplanev1alpha1.ManagementClusterSpec{Region: region, AccountID: placeholderMCAccountID},
 		})
 	}
 	return clusters, nil
@@ -42,7 +45,7 @@ func registerManagementClusters(ctx context.Context, db *seaplanedb.Client, clus
 		if err := db.CreateManagementCluster(ctx, mc); err != nil && !seaplanedb.IsAlreadyExists(err) {
 			return fmt.Errorf("failed to register management cluster %s: %w", mc.Name, err)
 		}
-		logger.Info("management cluster registered", "name", mc.Name, "account_id", mc.Spec.AccountID)
+		logger.Info("management cluster registered", "name", mc.Name)
 	}
 	return nil
 }

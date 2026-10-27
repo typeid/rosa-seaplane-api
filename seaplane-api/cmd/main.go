@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"regexp"
 	"strconv"
 	"syscall"
 	"time"
@@ -31,6 +32,8 @@ var (
 	healthPort               int
 	metricsPort              int
 )
+
+var accountIDPattern = regexp.MustCompile(`^\d{12}$`)
 
 func main() {
 	if err := rootCmd.Execute(); err != nil {
