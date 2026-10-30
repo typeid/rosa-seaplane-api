@@ -338,12 +338,23 @@ func (c *pgClient) Delete(ctx context.Context, obj client.Object, opts ...client
 		if expectedUID == nil {
 			return apierrors.NewBadRequest("metadata.uid is required when deleting with resourceVersion")
 		}
+		// The write is version-checked, so the caller's snapshot matches the stored row.
+		if dt := obj.GetDeletionTimestamp(); dt != nil {
+			t := dt.Time
+			existingDeletionTimestamp = &t
+		}
 	}
 
 	deletionTS := existingDeletionTimestamp
 	if deletionTS == nil {
 		now := time.Now()
 		deletionTS = &now
+		// Like the Kubernetes apiserver, starting a delete bumps generation so
+		// generation-based predicates see it.
+		metadata, err = bumpGeneration(metadata)
+		if err != nil {
+			return fmt.Errorf("bump generation: %w", err)
+		}
 	}
 
 	w := writer.New(conn, nil)
@@ -593,6 +604,25 @@ func currentGeneration(metadata json.RawMessage) int64 {
 		return 0
 	}
 	return sm.Generation
+}
+
+// bumpGeneration increments metadata.generation, leaving objects without a
+// generation unchanged. Other metadata keys are preserved as stored.
+func bumpGeneration(metadata json.RawMessage) (json.RawMessage, error) {
+	gen := currentGeneration(metadata)
+	if gen <= 0 {
+		return metadata, nil
+	}
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal(metadata, &m); err != nil {
+		return nil, err
+	}
+	next, err := json.Marshal(gen + 1)
+	if err != nil {
+		return nil, err
+	}
+	m["generation"] = next
+	return json.Marshal(m)
 }
 
 func uidFromUUID(u [16]byte) apitypes.UID {
