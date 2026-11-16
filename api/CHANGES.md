@@ -1,5 +1,41 @@
 # Changes
 
+## 0.1.21 Nov 16 2026
+
+- Remove Manifest API/controller and dead k8s RBAC scaffold
+- added more testing of ECR env variables, fixed write-mode of ImageContainerSources
+- ROSAENG-67497 Add policy management
+- chore(api): bump version to api/v0.1.28
+- ROSAENG-67911 | refactor: keep namespace sharding, document why
+- chore(api): bump version to api/v0.1.27
+- Remove incorrect kubelet association from ClusterConfiguration
+- ROSAENG-67911 | feat: drop name label and rely on UID instead
+- ROSAENG-67911 | feat: include namespace+label sharding
+- chore(api): bump version to api/v0.1.26
+- feat(api): support HCP custom DNS domains
+- chore(api): bump version to api/v0.1.25
+- ROSAENG-68195 | refactor: mirror awsplatform spec to curate fields
+- ROSAENG-68185 | feat: aws tags cluster/np day2
+- ROSAENG-68185 | feat: allow day2 aws tag changes
+- chore(api): bump version to api/v0.1.24
+- chore(api): bump version to api/v0.1.23
+- Rename platform-api to seaplane-api
+- ROSAENG-67495: Authorize customer label operations
+- Rename ROSA HyperFleet to ROSA Seaplane
+- chore(api): bump version to api/v0.1.22
+- feat: add resettable pathbind updates
+- chore(api): bump version to api/v0.1.21
+- ROSAENG-65107 | chore: Enable node drain grace period for v2
+- ROSAENG-68200 | feat: mark ipv4 subnet as immutable to match hypershift
+- ROSAENG-68169 | feat: include imds knob support for nps
+- ROSAENG-68177: feat: expose capabilities via mirror type
+- [ROSAENG-68125] | feat(api): add Spot node pools with optional interruption queue
+- ROSAENG-65211 | chore: Enable windowsLI for v2
+- ROSAENG-67492: Simplify authorization
+- ROSAENG-67492: Authorize resource operations
+- Reapply "ROSAENG-67489: Remove legacy authz service"
+
+
 ## 0.1.28 Nov 03 2026
 
 - ROSAENG-67911 | refactor: keep namespace sharding, document why
